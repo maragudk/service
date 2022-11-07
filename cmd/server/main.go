@@ -32,10 +32,10 @@ func start() int {
 	db := sql.NewDatabase(sql.NewDatabaseOptions{
 		Log:                   log,
 		URL:                   env.GetStringOrDefault("DATABASE_URL", "file:app.db"),
-		MaxOpenConnections:    5,
-		MaxIdleConnections:    5,
-		ConnectionMaxLifetime: time.Hour,
-		ConnectionMaxIdleTime: time.Hour,
+		MaxOpenConnections:    env.GetIntOrDefault("DATABASE_MAX_OPEN_CONNS", 5),
+		MaxIdleConnections:    env.GetIntOrDefault("DATABASE_MAX_IDLE_CONNS", 5),
+		ConnectionMaxLifetime: env.GetDurationOrDefault("DATABASE_CONN_MAX_LIFETIME", time.Hour),
+		ConnectionMaxIdleTime: env.GetDurationOrDefault("DATABASE_CONN_MAX_IDLE_TIME", time.Hour),
 	})
 
 	if err := db.Connect(); err != nil {
