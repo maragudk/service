@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/maragudk/service/sql"
 )
@@ -21,12 +22,14 @@ type Server struct {
 	log      *log.Logger
 	mux      chi.Router
 	server   *http.Server
+	metrics  *prometheus.Registry
 }
 
 type NewServerOptions struct {
 	Database *sql.Database
 	Host     string
 	Log      *log.Logger
+	Metrics  *prometheus.Registry
 	Port     int
 }
 
@@ -37,6 +40,10 @@ func NewServer(opts NewServerOptions) *Server {
 		opts.Log = log.New(io.Discard, "", 0)
 	}
 
+	if opts.Metrics == nil {
+		opts.Metrics = prometheus.NewRegistry()
+	}
+
 	address := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 	mux := chi.NewMux()
 
@@ -44,6 +51,7 @@ func NewServer(opts NewServerOptions) *Server {
 		address:  address,
 		database: opts.Database,
 		log:      opts.Log,
+		metrics:  opts.Metrics,
 		mux:      mux,
 		server: &http.Server{
 			Addr:              address,

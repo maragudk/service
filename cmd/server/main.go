@@ -10,6 +10,8 @@ import (
 
 	"github.com/maragudk/env"
 	"github.com/maragudk/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/maragudk/service/http"
@@ -29,8 +31,13 @@ func start() int {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	registry.MustRegister(collectors.NewGoCollector())
+
 	db := sql.NewDatabase(sql.NewDatabaseOptions{
 		Log:                   log,
+		Metrics:               registry,
 		URL:                   env.GetStringOrDefault("DATABASE_URL", "file:app.db"),
 		MaxOpenConnections:    env.GetIntOrDefault("DATABASE_MAX_OPEN_CONNS", 5),
 		MaxIdleConnections:    env.GetIntOrDefault("DATABASE_MAX_IDLE_CONNS", 5),
@@ -47,6 +54,7 @@ func start() int {
 		Database: db,
 		Host:     env.GetStringOrDefault("HOST", ""),
 		Log:      log,
+		Metrics:  registry,
 		Port:     env.GetIntOrDefault("PORT", 8080),
 	})
 

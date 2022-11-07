@@ -11,6 +11,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/maragudk/migrate"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 type Database struct {
@@ -21,6 +23,7 @@ type Database struct {
 	connectionMaxLifetime time.Duration
 	connectionMaxIdleTime time.Duration
 	log                   *log.Logger
+	metrics               *prometheus.Registry
 }
 
 type NewDatabaseOptions struct {
@@ -30,6 +33,7 @@ type NewDatabaseOptions struct {
 	ConnectionMaxLifetime time.Duration
 	ConnectionMaxIdleTime time.Duration
 	Log                   *log.Logger
+	Metrics               *prometheus.Registry
 }
 
 // NewDatabase with the given options.
@@ -37,6 +41,10 @@ type NewDatabaseOptions struct {
 func NewDatabase(opts NewDatabaseOptions) *Database {
 	if opts.Log == nil {
 		opts.Log = log.New(io.Discard, "", 0)
+	}
+
+	if opts.Metrics == nil {
+		opts.Metrics = prometheus.NewRegistry()
 	}
 
 	// - Set WAL mode (not strictly necessary each time because it's persisted in the database, but good for first run)
@@ -51,6 +59,7 @@ func NewDatabase(opts NewDatabaseOptions) *Database {
 		connectionMaxLifetime: opts.ConnectionMaxLifetime,
 		connectionMaxIdleTime: opts.ConnectionMaxIdleTime,
 		log:                   opts.Log,
+		metrics:               opts.Metrics,
 	}
 }
 
@@ -76,6 +85,8 @@ func (d *Database) Connect() error {
 	d.DB.SetMaxIdleConns(d.maxIdleConnections)
 	d.DB.SetConnMaxLifetime(d.connectionMaxLifetime)
 	d.DB.SetConnMaxIdleTime(d.connectionMaxIdleTime)
+
+	d.metrics.MustRegister(collectors.NewDBStatsCollector(d.DB.DB, "app"))
 
 	return nil
 }
