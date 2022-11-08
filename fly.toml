@@ -16,6 +16,10 @@ processes = []
   destination = "/data"
   source = "data"
 
+[metrics]
+  port = 8080
+  path = "/metrics"
+
 [[services]]
   http_checks = []
   internal_port = 8080
