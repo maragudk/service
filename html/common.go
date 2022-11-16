@@ -13,8 +13,8 @@ import (
 	. "github.com/maragudk/gomponents/html"
 )
 
-//go:embed public
-var public embed.FS
+//go:embed public/styles
+var styles embed.FS
 
 type PageProps struct {
 	Title       string
@@ -26,7 +26,7 @@ var appCSSPath string
 
 func Page(p PageProps, body ...g.Node) g.Node {
 	hashOnce.Do(func() {
-		appCSSPath = getHashedPath(public, "public/styles/app.css")
+		appCSSPath = getHashedPath(styles, "public/styles/app.css")
 	})
 
 	return c.HTML5(c.HTML5Props{
