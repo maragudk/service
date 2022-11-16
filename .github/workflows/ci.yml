@@ -38,6 +38,9 @@ jobs:
           go-version-file: go.mod
           check-latest: true
 
+      - name: Create assets
+        run: mkdir -p html/public/styles && touch html/public/styles/app.css
+
       - name: Build
         run: go build -v ./...
 
