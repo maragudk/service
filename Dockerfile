@@ -1,12 +1,3 @@
-FROM golang AS builder
-WORKDIR /src
-
-COPY go.mod go.sum ./
-RUN go mod download
-
-COPY . ./
-RUN GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /bin/server ./cmd/server
-
 FROM debian:bullseye-slim AS tailwindcss
 WORKDIR /src
 
@@ -22,6 +13,16 @@ COPY tailwind.config.js tailwind.css ./
 
 COPY html ./html/
 RUN ./tailwindcss -i tailwind.css -o app.css --minify
+
+FROM golang AS builder
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . ./
+COPY --from=tailwindcss /src/app.css ./html/public/styles/
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /bin/server ./cmd/server
 
 FROM debian:bullseye-slim AS runner
 WORKDIR /app
