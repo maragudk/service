@@ -2,8 +2,8 @@ package html
 
 import (
 	"crypto/sha256"
-	"embed"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -12,9 +12,6 @@ import (
 	c "github.com/maragudk/gomponents/components"
 	. "github.com/maragudk/gomponents/html"
 )
-
-//go:embed public/styles
-var styles embed.FS
 
 type PageProps struct {
 	Title       string
@@ -26,7 +23,7 @@ var appCSSPath string
 
 func Page(p PageProps, body ...g.Node) g.Node {
 	hashOnce.Do(func() {
-		appCSSPath = getHashedPath(styles, "public/styles/app.css")
+		appCSSPath = getHashedPath("public/styles/app.css")
 	})
 
 	return c.HTML5(c.HTML5Props{
@@ -75,15 +72,17 @@ func NotFoundPage() g.Node {
 	)
 }
 
-func getHashedPath(fs embed.FS, path string) string {
-	data, err := fs.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	path = strings.TrimPrefix(path, "public/")
+func getHashedPath(path string) string {
+	externalPath := strings.TrimPrefix(path, "public/")
 	ext := filepath.Ext(path)
 	if ext == "" {
 		panic("no extension found")
 	}
-	return fmt.Sprintf("%v.%x%v", strings.TrimSuffix(path, ext), sha256.Sum256(data), ext)
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Sprintf("%v.x%v", strings.TrimSuffix(externalPath, ext), ext)
+	}
+
+	return fmt.Sprintf("%v.%x%v", strings.TrimSuffix(externalPath, ext), sha256.Sum256(data), ext)
 }

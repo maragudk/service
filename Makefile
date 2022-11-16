@@ -1,6 +1,6 @@
 .PHONY: build-css
 build-css: tailwindcss
-	./tailwindcss -i tailwind.css -o html/public/styles/app.css --minify
+	./tailwindcss -i tailwind.css -o public/styles/app.css --minify
 
 .PHONY: cover
 cover:
@@ -21,4 +21,4 @@ test:
 
 .PHONY: watch-css
 watch-css: tailwindcss
-	./tailwindcss -i tailwind.css -o html/public/styles/app.css --watch
+	./tailwindcss -i tailwind.css -o public/styles/app.css --watch
