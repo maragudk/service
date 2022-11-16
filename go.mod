@@ -8,6 +8,7 @@ require (
 	github.com/maragudk/env v0.1.2
 	github.com/maragudk/errors v0.1.1
 	github.com/maragudk/gomponents v0.20.0
+	github.com/maragudk/gomponents-heroicons/v2 v2.0.0-beta1
 	github.com/maragudk/migrate v0.4.3
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/prometheus/client_golang v1.13.1
