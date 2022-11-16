@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -46,4 +47,16 @@ func AddMetrics(registry *prometheus.Registry) Middleware {
 
 func Metrics(mux chi.Router, registry *prometheus.Registry) {
 	mux.Get("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP)
+}
+
+var versionedAssetMatcher = regexp.MustCompile(`([^.]+)\.[a-z0-9]+(\.(?:js|css))`)
+
+func VersionedAssets(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if versionedAssetMatcher.MatchString(r.URL.Path) {
+			r.URL.Path = versionedAssetMatcher.ReplaceAllString(r.URL.Path, `$1$2`)
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
