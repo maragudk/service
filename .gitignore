@@ -1,3 +1,5 @@
 app.db*
 cover.out
 .env
+/public/styles/app.css
+tailwindcss

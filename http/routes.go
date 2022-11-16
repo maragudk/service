@@ -13,6 +13,12 @@ func (s *Server) setupRoutes() {
 	Metrics(s.mux, s.metrics)
 
 	s.mux.Group(func(r chi.Router) {
+		r.Use(VersionedAssets)
+
+		Static(r)
+	})
+
+	s.mux.Group(func(r chi.Router) {
 		r.Use(middleware.SetHeader("Content-Type", "text/html; charset=utf-8"))
 
 		Home(r)
