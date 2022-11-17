@@ -10,6 +10,7 @@ func (s *Server) setupRoutes() {
 	s.mux.Use(middleware.RealIP)
 	s.mux.Use(AddMetrics(s.metrics))
 
+	Health(s.mux, s.database)
 	Metrics(s.mux, s.metrics)
 
 	s.mux.Group(func(r chi.Router) {
