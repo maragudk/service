@@ -15,6 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/maragudk/service/http"
+	"github.com/maragudk/service/jobs"
 	"github.com/maragudk/service/sql"
 )
 
@@ -58,12 +59,26 @@ func start() int {
 		Port:     env.GetIntOrDefault("PORT", 8080),
 	})
 
+	runner := jobs.NewRunner(jobs.NewRunnerOptions{
+		Database:     db,
+		JobLimit:     5,
+		Log:          log,
+		Metrics:      registry,
+		PollInterval: time.Second,
+		Queue:        db,
+	})
+
 	eg, ctx := errgroup.WithContext(ctx)
 
 	eg.Go(func() error {
 		if err := s.Start(); err != nil {
 			return errors.Wrap(err, "error starting server")
 		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		runner.Start(ctx)
 		return nil
 	})
 

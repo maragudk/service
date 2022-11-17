@@ -83,5 +83,9 @@ func (s *Server) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	return s.server.Shutdown(ctx)
+	if err := s.server.Shutdown(ctx); err != nil {
+		return err
+	}
+	s.log.Println("Stopped")
+	return nil
 }
