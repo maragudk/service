@@ -56,6 +56,7 @@ func NewServer(opts NewServerOptions) *Server {
 		server: &http.Server{
 			Addr:              address,
 			Handler:           mux,
+			ErrorLog:          opts.Log,
 			ReadTimeout:       5 * time.Second,
 			ReadHeaderTimeout: 5 * time.Second,
 			WriteTimeout:      5 * time.Second,
