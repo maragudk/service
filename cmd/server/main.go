@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/maragudk/env"
 	"github.com/maragudk/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,6 +32,24 @@ func start() int {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
+
+	honeybadgerAPIKey := env.GetStringOrDefault("HONEYBADGER_API_KEY", "")
+	if honeybadgerAPIKey != "" {
+		honeybadger.Configure(honeybadger.Configuration{
+			APIKey: honeybadgerAPIKey,
+			Env:    "production",
+			Logger: log,
+		})
+
+		defer honeybadger.Flush()
+		defer honeybadger.Monitor()
+	} else {
+		honeybadger.Configure(honeybadger.Configuration{
+			Backend: honeybadger.NewNullBackend(),
+			Env:     "development",
+			Logger:  log,
+		})
+	}
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
