@@ -33,7 +33,7 @@ func Page(p PageProps, body ...g.Node) g.Node {
 		Head: []g.Node{
 			Link(Rel("stylesheet"), Href(appCSSPath)),
 		},
-		Body: []g.Node{
+		Body: []g.Node{Class("dark:bg-gray-900"),
 			Container(true,
 				Prose(
 					g.Group(body),
@@ -54,7 +54,7 @@ func Container(padY bool, children ...g.Node) g.Node {
 }
 
 func Prose(children ...g.Node) g.Node {
-	return Div(Class("prose prose-lg lg:prose-xl xl:prose-2xl prose-indigo"), g.Group(children))
+	return Div(Class("prose prose-lg lg:prose-xl xl:prose-2xl dark:prose-invert"), g.Group(children))
 }
 
 func ErrorPage() g.Node {
