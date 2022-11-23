@@ -89,27 +89,33 @@ func start() int {
 
 	eg, ctx := errgroup.WithContext(ctx)
 
-	eg.Go(func() error {
-		if err := s.Start(); err != nil {
-			return errors.Wrap(err, "error starting server")
-		}
-		return nil
-	})
+	if env.GetBoolOrDefault("SERVER_ENABLED", true) {
+		eg.Go(func() error {
+			if err := s.Start(); err != nil {
+				return errors.Wrap(err, "error starting server")
+			}
+			return nil
+		})
+	}
 
-	eg.Go(func() error {
-		runner.Start(ctx)
-		return nil
-	})
+	if env.GetBoolOrDefault("JOBS_ENABLED", true) {
+		eg.Go(func() error {
+			runner.Start(ctx)
+			return nil
+		})
+	}
 
 	<-ctx.Done()
 	log.Println("Stopping")
 
-	eg.Go(func() error {
-		if err := s.Stop(); err != nil {
-			return errors.Wrap(err, "error stopping server")
-		}
-		return nil
-	})
+	if env.GetBoolOrDefault("SERVER_ENABLED", true) {
+		eg.Go(func() error {
+			if err := s.Stop(); err != nil {
+				return errors.Wrap(err, "error stopping server")
+			}
+			return nil
+		})
+	}
 
 	if err := eg.Wait(); err != nil {
 		log.Println("Error:", err)
