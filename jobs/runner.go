@@ -184,8 +184,6 @@ func (r *Runner) receiveAndRun(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 
-		r.log.Println("Successfully ran job")
-
 		// We use context.Background as the parent context instead of the existing ctx, because if we've come
 		// this far we don't want the deletion to be cancelled.
 		deleteCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
