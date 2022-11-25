@@ -7,6 +7,7 @@ processes = []
 
 [env]
   DATABASE_URL = "file:/data/app.db"
+  FLY_PRIMARY_REGION = "fra"
 
 [experimental]
   allowed_public_ports = []
