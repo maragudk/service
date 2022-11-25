@@ -31,7 +31,7 @@ WORKDIR /app
 RUN mkdir -p /data /mnt/data
 
 RUN set -x && apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates sqlite3 && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates sqlite3 fuse && \
   rm -rf /var/lib/apt/lists/*
 
 ADD litefs.yml /etc/litefs.yml
