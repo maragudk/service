@@ -1,3 +1,5 @@
+FROM flyio/litefs:0.3.0-beta5 AS litefs
+
 FROM golang AS builder
 WORKDIR /src
 
@@ -26,12 +28,17 @@ RUN ./tailwindcss -i tailwind.css -o app.css --minify
 FROM debian:bullseye-slim AS runner
 WORKDIR /app
 
+RUN mkdir -p /data /mnt/data
+
 RUN set -x && apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates sqlite3 && \
   rm -rf /var/lib/apt/lists/*
+
+ADD litefs.yml /etc/litefs.yml
+COPY --from=litefs /usr/local/bin/litefs ./
 
 COPY public ./public/
 COPY --from=tailwindcss /src/app.css ./public/styles/
 COPY --from=builder /bin/server ./
 
-CMD ["./server"]
+CMD ["./litefs", "mount"]
