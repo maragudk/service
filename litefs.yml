@@ -10,6 +10,6 @@ exec: "/app/server"
 # These environment variables will be available in your Fly.io application.
 # You must specify "experiement.enable_consul" for FLY_CONSUL_URL to be available.
 static:
-  primary: ${FLY_REGION == PRIMARY_REGION)
+  primary: true
   hostname: "${HOSTNAME}"
   advertise-url: "http://${HOSTNAME}.vm.${FLY_APP_NAME}.internal:20202"
