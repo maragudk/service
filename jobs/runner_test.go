@@ -43,8 +43,7 @@ func TestRunner_Start(t *testing.T) {
 		// This blocks until the context is cancelled by the job function
 		runner.Start(ctx)
 
-		require.Equal(t, "Starting\nRegistered jobs: [health test]\nSuccessfully ran job\n"+
-			"Stopping\nStopped\n", logs.String())
+		require.Equal(t, "Starting\nRegistered jobs: [health test]\nStopping\nStopped\n", logs.String())
 	})
 
 	t.Run("emits job metrics", func(t *testing.T) {

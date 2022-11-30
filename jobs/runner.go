@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -96,6 +97,15 @@ type Func = func(context.Context, model.Map) error
 func (r *Runner) Start(ctx context.Context) {
 	r.log.Println("Starting")
 	r.registerJobs()
+
+	var names []string
+	for k := range r.jobs {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+
+	r.log.Println("Registered jobs:", names)
+
 	var wg sync.WaitGroup
 
 	ticker := time.NewTicker(r.pollInterval)
@@ -183,8 +193,6 @@ func (r *Runner) receiveAndRun(ctx context.Context, wg *sync.WaitGroup) {
 			r.log.Println("Error running job:", err)
 			return
 		}
-
-		r.log.Println("Successfully ran job")
 
 		// We use context.Background as the parent context instead of the existing ctx, because if we've come
 		// this far we don't want the deletion to be cancelled.
