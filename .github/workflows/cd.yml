@@ -26,7 +26,6 @@ jobs:
       - run: flyctl deploy --remote-only
 
       - name: Deploy in Honeybadger
-        if: ${{ secrets.HONEYBADGER_API_KEY != "" }}
         uses: honeybadger-io/github-notify-deploy-action@v1
         with:
           api_key: ${{ secrets.HONEYBADGER_API_KEY }}
