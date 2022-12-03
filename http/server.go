@@ -13,24 +13,27 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/maragudk/service/s3"
 	"github.com/maragudk/service/sql"
 )
 
 type Server struct {
-	address  string
-	database *sql.Database
-	log      *log.Logger
-	mux      chi.Router
-	server   *http.Server
-	metrics  *prometheus.Registry
+	address     string
+	database    *sql.Database
+	log         *log.Logger
+	metrics     *prometheus.Registry
+	mux         chi.Router
+	objectStore *s3.ObjectStore
+	server      *http.Server
 }
 
 type NewServerOptions struct {
-	Database *sql.Database
-	Host     string
-	Log      *log.Logger
-	Metrics  *prometheus.Registry
-	Port     int
+	Database    *sql.Database
+	Host        string
+	Log         *log.Logger
+	Metrics     *prometheus.Registry
+	ObjectStore *s3.ObjectStore
+	Port        int
 }
 
 // NewServer returns an initialized, but unstarted Server.
@@ -48,11 +51,12 @@ func NewServer(opts NewServerOptions) *Server {
 	mux := chi.NewMux()
 
 	return &Server{
-		address:  address,
-		database: opts.Database,
-		log:      opts.Log,
-		metrics:  opts.Metrics,
-		mux:      mux,
+		address:     address,
+		database:    opts.Database,
+		log:         opts.Log,
+		metrics:     opts.Metrics,
+		mux:         mux,
+		objectStore: opts.ObjectStore,
 		server: &http.Server{
 			Addr:              address,
 			Handler:           mux,

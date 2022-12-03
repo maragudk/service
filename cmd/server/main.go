@@ -8,6 +8,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go/logging"
 	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/maragudk/env"
 	"github.com/maragudk/errors"
@@ -17,6 +21,7 @@ import (
 
 	"github.com/maragudk/service/http"
 	"github.com/maragudk/service/jobs"
+	"github.com/maragudk/service/s3"
 	"github.com/maragudk/service/sql"
 )
 
@@ -70,12 +75,27 @@ func start() int {
 		return 1
 	}
 
+	awsConfig, err := config.LoadDefaultConfig(context.Background(),
+		config.WithLogger(createAWSLogAdapter(log)),
+		config.WithEndpointResolverWithOptions(createAWSEndpointResolver()),
+	)
+	if err != nil {
+		log.Println("Error creating AWS config:", err)
+		return 1
+	}
+
+	objectStore := s3.NewObjectStore(s3.NewObjectStoreOptions{
+		Config: awsConfig,
+		Log:    log,
+	})
+
 	s := http.NewServer(http.NewServerOptions{
-		Database: db,
-		Host:     env.GetStringOrDefault("HOST", ""),
-		Log:      log,
-		Metrics:  registry,
-		Port:     env.GetIntOrDefault("PORT", 8080),
+		Database:    db,
+		Host:        env.GetStringOrDefault("HOST", ""),
+		Log:         log,
+		Metrics:     registry,
+		ObjectStore: objectStore,
+		Port:        env.GetIntOrDefault("PORT", 8080),
 	})
 
 	runner := jobs.NewRunner(jobs.NewRunnerOptions{
@@ -125,4 +145,29 @@ func start() int {
 	log.Println("Stopped")
 
 	return 0
+}
+
+func createAWSLogAdapter(log *log.Logger) logging.LoggerFunc {
+	return func(classification logging.Classification, format string, v ...any) {
+		log.Printf(string(classification)+" "+format, v...)
+	}
+}
+
+// createAWSEndpointResolver used for local development endpoints.
+// See https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/endpoints/
+func createAWSEndpointResolver() aws.EndpointResolverWithOptionsFunc {
+	s3EndpointURL := env.GetStringOrDefault("S3_ENDPOINT_URL", "")
+
+	return func(service, region string, options ...any) (aws.Endpoint, error) {
+		switch service {
+		case awss3.ServiceID:
+			if s3EndpointURL != "" {
+				return aws.Endpoint{
+					URL: s3EndpointURL,
+				}, nil
+			}
+		}
+		// Fallback to default endpoint
+		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+	}
 }
