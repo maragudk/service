@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/maragudk/service/email"
 	"github.com/maragudk/service/http"
 	"github.com/maragudk/service/jobs"
 	"github.com/maragudk/service/s3"
@@ -89,6 +90,18 @@ func start() int {
 		Log:    log,
 	})
 
+	emailSender := email.NewSender(email.NewSenderOptions{
+		BaseURL:                   env.GetStringOrDefault("BASE_URL", "http://localhost"),
+		EndpointURL:               env.GetStringOrDefault("POSTMARK_ENDPOINT_URL", ""),
+		Log:                       log,
+		MarketingEmailAddress:     env.GetStringOrDefault("MARKETING_EMAIL_ADDRESS", "marketing@example.com"),
+		MarketingEmailName:        env.GetStringOrDefault("MARKETING_EMAIL_NAME", "Marketing"),
+		Metrics:                   registry,
+		Token:                     env.GetStringOrDefault("POSTMARK_TOKEN", ""),
+		TransactionalEmailAddress: env.GetStringOrDefault("TRANSACTIONAL_EMAIL_ADDRESS", "transactional@example.com"),
+		TransactionalEmailName:    env.GetStringOrDefault("TRANSACTIONAL_EMAIL_NAME", "Transactional"),
+	})
+
 	s := http.NewServer(http.NewServerOptions{
 		Database:    db,
 		Host:        env.GetStringOrDefault("HOST", ""),
@@ -100,6 +113,7 @@ func start() int {
 
 	runner := jobs.NewRunner(jobs.NewRunnerOptions{
 		Database:     db,
+		EmailSender:  emailSender,
 		JobLimit:     5,
 		Log:          log,
 		Metrics:      registry,

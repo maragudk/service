@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	"github.com/maragudk/service/email"
 	"github.com/maragudk/service/model"
 	"github.com/maragudk/service/sql"
 )
@@ -22,6 +23,7 @@ type Runner struct {
 	currentJobCount     int
 	currentJobCountLock sync.RWMutex
 	database            *sql.Database
+	emailSender         *email.Sender
 	jobCount            *prometheus.CounterVec
 	jobDuration         *prometheus.CounterVec
 	jobCountLimit       int
@@ -34,6 +36,7 @@ type Runner struct {
 
 type NewRunnerOptions struct {
 	Database     *sql.Database
+	EmailSender  *email.Sender
 	JobLimit     int
 	Log          *log.Logger
 	Metrics      *prometheus.Registry
@@ -77,6 +80,7 @@ func NewRunner(opts NewRunnerOptions) *Runner {
 
 	return &Runner{
 		database:       opts.Database,
+		emailSender:    opts.EmailSender,
 		jobCount:       jobCount,
 		jobDuration:    jobDuration,
 		jobCountLimit:  opts.JobLimit,
