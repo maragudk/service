@@ -1,4 +1,4 @@
-package messaging
+package email
 
 import (
 	"bytes"
@@ -38,9 +38,9 @@ type nameAndEmail = string
 
 type keywords = map[string]string
 
-// Emailer can send transactional and marketing emails through Postmark.
+// Sender can send transactional and marketing emails through Postmark.
 // See https://postmarkapp.com/developer
-type Emailer struct {
+type Sender struct {
 	baseURL           string
 	client            *http.Client
 	emailCount        *prometheus.CounterVec
@@ -51,7 +51,7 @@ type Emailer struct {
 	transactionalFrom nameAndEmail
 }
 
-type NewEmailerOptions struct {
+type NewSenderOptions struct {
 	BaseURL                   string
 	EndpointURL               string
 	Log                       *log.Logger
@@ -63,7 +63,7 @@ type NewEmailerOptions struct {
 	TransactionalEmailName    string
 }
 
-func NewEmailer(opts NewEmailerOptions) *Emailer {
+func NewSender(opts NewSenderOptions) *Sender {
 	if opts.Log == nil {
 		opts.Log = log.New(io.Discard, "", 0)
 	}
@@ -80,7 +80,7 @@ func NewEmailer(opts NewEmailerOptions) *Emailer {
 		Name: "app_emails_total",
 	}, []string{"name", "success"})
 
-	return &Emailer{
+	return &Sender{
 		baseURL:           strings.TrimSuffix(opts.BaseURL, "/"),
 		client:            &http.Client{Timeout: 3 * time.Second},
 		emailCount:        emailCount,
@@ -92,15 +92,15 @@ func NewEmailer(opts NewEmailerOptions) *Emailer {
 	}
 }
 
-func (e *Emailer) SendGenericEmail(ctx context.Context, name string, email model.Email, subject, preheader, content string) error {
-	return e.send(ctx, transactional, createNameAndEmail(name, email.String()), subject, preheader, "generic", keywords{
-		"baseURL": e.baseURL,
+func (s *Sender) SendGenericEmail(ctx context.Context, name string, email model.Email, subject, preheader, content string) error {
+	return s.send(ctx, transactional, createNameAndEmail(name, email.String()), subject, preheader, "generic", keywords{
+		"baseURL": s.baseURL,
 		"title":   subject,
 		"content": content,
 	})
 }
 
-// requestBody used in Emailer.send.
+// requestBody used in Sender.send.
 // See https://postmarkapp.com/developer/user-guide/send-email-with-api
 type requestBody struct {
 	MessageStream string
@@ -111,19 +111,19 @@ type requestBody struct {
 	HtmlBody      string
 }
 
-func (e *Emailer) send(ctx context.Context, typ emailType, to nameAndEmail, subject, preheader, template string, keywords keywords) error {
+func (s *Sender) send(ctx context.Context, typ emailType, to nameAndEmail, subject, preheader, template string, keywords keywords) error {
 	var messageStream string
 	var from nameAndEmail
 	switch typ {
 	case marketing:
-		from = e.marketingFrom
+		from = s.marketingFrom
 		messageStream = marketingMessageStream
 	case transactional:
-		from = e.transactionalFrom
+		from = s.transactionalFrom
 		messageStream = transactionalMessageStream
 	}
 
-	err := e.sendRequest(ctx, requestBody{
+	err := s.sendRequest(ctx, requestBody{
 		MessageStream: messageStream,
 		From:          from,
 		To:            to,
@@ -132,7 +132,7 @@ func (e *Emailer) send(ctx context.Context, typ emailType, to nameAndEmail, subj
 		HtmlBody:      getEmail(template+".html", preheader, keywords),
 	})
 
-	e.emailCount.WithLabelValues(template, strconv.FormatBool(err == nil)).Inc()
+	s.emailCount.WithLabelValues(template, strconv.FormatBool(err == nil)).Inc()
 
 	return err
 }
@@ -143,22 +143,22 @@ type postmarkResponse struct {
 }
 
 // send using the Postmark API.
-func (e *Emailer) sendRequest(ctx context.Context, body requestBody) error {
+func (s *Sender) sendRequest(ctx context.Context, body requestBody) error {
 	bodyAsBytes, err := json.Marshal(body)
 	if err != nil {
 		return errors.Wrap(err, "error marshalling request body to json")
 	}
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, e.endpointURL, bytes.NewReader(bodyAsBytes))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpointURL, bytes.NewReader(bodyAsBytes))
 	if err != nil {
 		return errors.Wrap(err, "error creating request")
 	}
 
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("X-Postmark-Server-Token", e.token)
+	request.Header.Set("X-Postmark-Server-Token", s.token)
 
-	response, err := e.client.Do(request)
+	response, err := s.client.Do(request)
 	if err != nil {
 		return errors.Wrap(err, "error making request")
 	}
@@ -180,16 +180,16 @@ func (e *Emailer) sendRequest(ctx context.Context, body requestBody) error {
 		// https://postmarkapp.com/developer/api/overview#error-codes
 		switch r.ErrorCode {
 		case 406:
-			e.log.Printf("Not sending email, recipient %v is inactive.", body.To)
+			s.log.Printf("Not sending email, recipient %v is inactive.", body.To)
 			return nil
 		default:
-			e.log.Println("Error sending email:", r.Message, "; error code:", r.ErrorCode)
+			s.log.Println("Error sending email:", r.Message, "; error code:", r.ErrorCode)
 			return errors.Newf("error sending email, got error code %v", r.ErrorCode)
 		}
 	}
 
 	if response.StatusCode > 299 {
-		e.log.Println("Error sending email:", response.StatusCode, string(bodyAsBytes))
+		s.log.Println("Error sending email:", response.StatusCode, string(bodyAsBytes))
 		return errors.Newf("error sending email, got status %v", response.StatusCode)
 	}
 
