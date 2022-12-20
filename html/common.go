@@ -73,7 +73,7 @@ func NotFoundPage() g.Node {
 }
 
 func getHashedPath(path string) string {
-	externalPath := strings.TrimPrefix(path, "public/")
+	externalPath := strings.TrimPrefix(path, "public")
 	ext := filepath.Ext(path)
 	if ext == "" {
 		panic("no extension found")
