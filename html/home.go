@@ -6,9 +6,11 @@ import (
 	. "github.com/maragudk/gomponents/html"
 )
 
-func HomePage() g.Node {
-	return Page(PageProps{Title: "Service", Description: "This is a service."},
+func HomePage(p PageProps) g.Node {
+	p.Title = "Service"
+	p.Description = "This is a service."
 
+	return Page(p,
 		Div(Class("prose-headings:font-serif"),
 			H1(Class("inline-flex items-center"), solid.Sparkles(Class("h-12 w-12 mr-2")), g.Text(`Service`)),
 
